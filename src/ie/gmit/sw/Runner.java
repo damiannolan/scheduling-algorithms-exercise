@@ -48,45 +48,96 @@ public class Runner {
 					fcfs(processArray, totalProcesses);
 					break;
 				case 3:
+					//Get the time quantum from the user
 					System.out.println("Please enter a time quantum: ");
 					quantum = console.nextInt();
 					
+					//initialize a totalBurstTime variable to control the while loop
+					//this will be decremented every time each process runs 1 quantum
 					int totalBurstTime = 0;
+					int count = 0;
+					
+					//Put the process burst times into an array so that you can don't have to decrement the initial values
+					int[] processBurstTimes = new int[totalProcesses];
 
 					//loop through the processArray and calculate the total burst time
 					for(PiD process : processArray)
 					{
 						totalBurstTime += process.getProcessBurstTime();
+						
+						//put the the burst times into the array as the ArrayList loops
+						processBurstTimes[count] = process.getProcessBurstTime();
+						count++;
 					}
 					
 					System.out.println("Process No | Start Time | Burst Time | Wait Time");
 					
+					//startTime - the time at which a process goes into the CPU
 					int startTime = 0;
+					//burstTime - a variable to split the entire burstTime into quantums and the remainder
 					int burstTime = 0;
+					//waitTimes - an array for calculating the wait times of each process
 					int[] waitTimes = new int[totalProcesses];
+					//timeSpent - an array for adding up the time executed as the loop cycles
+					int[] timeSpent = new int[totalProcesses];
 					int i = 0;
 
 					//while the totalburstTime > 0 then keep looping through the processArray
 					while(totalBurstTime > 0)
 					{
+						//reset i to 0 after each process runs for 1 quantum
 						i = 0;
+
 						for(PiD process : processArray)
-						{
-							
-							if(process.getProcessBurstTime() < quantum)
+						{	
+							if(processBurstTimes[i] < quantum)
 							{
+								//increment startTime
 								startTime += burstTime;
-								burstTime = process.getProcessBurstTime();
-								process.setProcessBurstTime(0);
+								burstTime = processBurstTimes[i];
+								
+								//increment timeSpent running for each process
+								timeSpent[i] += burstTime;
+								//if the time is less than one quantum it will finish after one cycle
+								processBurstTimes[i] = 0;
 							}
 							else
 							{
+								//increment startTime
 								startTime += burstTime;
 								burstTime = quantum;
-								process.setProcessBurstTime(process.getProcessBurstTime() - quantum);
+
+								//increment timeSpent running for each process
+								timeSpent[i] += burstTime;
+								//decrement the processBurstTime by one quantum
+								processBurstTimes[i] = processBurstTimes[i] - quantum;
 							}
 							
+							if(timeSpent[i] > 0 && i == 0)
+							{
+								//if the time spent is greater than 0 and the processNo is 1
+								waitTimes[i] = startTime + burstTime - timeSpent[i];
+							}
+							else if(i > 0 && timeSpent[i] <= quantum && burstTime > 0)
+							{
+								//if the the processNo is greater than 1 AND
+								//the time spent is less than/equal to the quantum and burstTime of current iteration is > 0
+								waitTimes[i] = startTime;
+							}
+							else if (burstTime > 0)
+							{
+								//if the burstTime is > 0
+								//but the process time spent is greater than the quantum
+								waitTimes[i] = startTime + burstTime - timeSpent[i];
+							}
+							else if (burstTime == 0)
+							{
+								//if the burstTime is = 0 then the process has finished
+								//the wait time remains the same
+								waitTimes[i] = waitTimes[i];
+							}
 							
+							if(burstTime > 0)
 							System.out.printf("%10d %10d %10d %10d\n", process.getProcessNo(), startTime, burstTime, waitTimes[i]);							
 							
 							//Decrement the totalBurstTime
@@ -97,12 +148,25 @@ public class Runner {
 						//separate iterations in the console
 						System.out.println("================================================");
 					} //end while
+					
+					int totalWaitTime = 0;
+					float averageWaitTime;
+					
+					for(i = 0; i < totalProcesses; i++)
+					{
+						totalWaitTime += waitTimes[i];
+					}
+					
+					System.out.println("\nThe total wait time = " + totalWaitTime);
+					
+					averageWaitTime = (float)totalWaitTime / totalProcesses;
+					System.out.println("\nThe average wait time = " + averageWaitTime);
 					break;
 				default:
 					break;
 			}
 			
-			System.out.println("Please choose a scheduling algorithm: ");
+			System.out.println("\nPlease choose a scheduling algorithm: ");
 			option = console.nextInt();
 		}
 		
